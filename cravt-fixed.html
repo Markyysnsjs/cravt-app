@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cravt - Shorts Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Inter', sans-serif; background: #000; color: #fff; overflow: hidden; }
+.auth-screen { position: fixed; inset: 0; background: linear-gradient(135deg, #0a0a0a, #1a1a2e); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+.auth-box { background: #1a1a1a; padding: 40px; border-radius: 20px; width: 90%; max-width: 400px; box-shadow: 0 20px 60px rgba(0,255,136,0.2); }
+.logo { font-size: 48px; font-weight: 800; background: linear-gradient(135deg, #00ff88, #00ccff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-align: center; margin-bottom: 30px; }
+.input { width: 100%; padding: 15px; margin: 10px 0; background: #0a0a0a; border: 2px solid #2a2a2a; border-radius: 12px; color: #fff; font-size: 16px; }
+.input:focus { outline: none; border-color: #00ff88; }
+.btn { width: 100%; padding: 15px; margin: 20px 0; background: #00ff88; border: none; border-radius: 12px; color: #000; font-size: 16px; font-weight: 700; cursor: pointer; }
+.btn:hover { background: #00cc6f; }
+.switch { text-align: center; color: #999; font-size: 14px; }
+.switch span { color: #00ff88; cursor: pointer; text-decoration: underline; }
+.hidden { display: none !important; }
+#app { display: none; height: 100vh; }
+.videos { height: calc(100vh - 60px); overflow-y: scroll; scroll-snap-type: y mandatory; }
+.videos::-webkit-scrollbar { display: none; }
+.video { height: calc(100vh - 60px); width: 100%; scroll-snap-align: start; position: relative; display: flex; align-items: center; justify-content: center; }
+.video-info { position: absolute; bottom: 80px; left: 15px; right: 80px; z-index: 50; }
+.author { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.avatar { width: 40px; height: 40px; background: linear-gradient(135deg, #ff0080, #7928ca); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+.follow-btn { padding: 6px 16px; background: #00ff88; border: none; border-radius: 20px; color: #000; font-weight: 700; cursor: pointer; margin-left: auto; }
+.actions { position: absolute; right: 10px; bottom: 100px; display: flex; flex-direction: column; gap: 20px; z-index: 100; }
+.action { display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; }
+.action-icon { width: 48px; height: 48px; background: rgba(26,26,26,0.8); backdrop-filter: blur(10px); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; border: 2px solid rgba(255,255,255,0.2); }
+.action-count { font-size: 12px; font-weight: 600; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+.nav { position: fixed; bottom: 0; left: 0; right: 0; height: 60px; background: #1a1a1a; border-top: 1px solid #2a2a2a; display: flex; justify-content: space-around; align-items: center; z-index: 1000; }
+.nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; padding: 8px 12px; color: #999; }
+.nav-item.active { color: #00ff88; }
+.nav-icon { font-size: 24px; }
+.nav-label { font-size: 10px; font-weight: 600; }
+.add-btn { width: 48px; height: 48px; background: #00ff88; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 28px; color: #000; cursor: pointer; }
+.modal { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 2000; display: none; }
+.modal.active { display: block; }
+.modal-content { position: absolute; bottom: 0; left: 0; right: 0; background: #1a1a1a; border-radius: 20px 20px 0 0; max-height: 80vh; overflow-y: auto; padding: 20px; }
+.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #2a2a2a; }
+.modal-title { font-size: 20px; font-weight: 700; }
+.modal-close { font-size: 28px; cursor: pointer; color: #999; }
+.error { background: rgba(239,68,68,0.1); border: 1px solid #ef4444; color: #ef4444; padding: 12px; border-radius: 8px; margin-bottom: 16px; display: none; }
+.success { background: rgba(34,197,94,0.1); border: 1px solid #22c55e; color: #22c55e; padding: 12px; border-radius: 8px; margin-bottom: 16px; display: none; }
+</style>
+</head>
+<body>
+
+<div id="authScreen" class="auth-screen">
+  <div class="auth-box">
+    <div class="logo">CRAVT</div>
+    <div id="loginForm">
+      <div id="loginError" class="error"></div>
+      <input type="text" id="loginUser" class="input" placeholder="Никнейм">
+      <input type="password" id="loginPass" class="input" placeholder="Пароль">
+      <button class="btn" onclick="login()">Войти</button>
+      <div class="switch">Нет аккаунта? <span onclick="showReg()">Зарегистрироваться</span></div>
+    </div>
+    <div id="regForm" class="hidden">
+      <div id="regError" class="error"></div>
+      <input type="text" id="regUser" class="input" placeholder="Никнейм">
+      <input type="password" id="regPass" class="input" placeholder="Пароль">
+      <input type="password" id="regPass2" class="input" placeholder="Подтвердите пароль">
+      <button class="btn" onclick="register()">Создать аккаунт</button>
+      <div class="switch">Уже есть аккаунт? <span onclick="showLog()">Войти</span></div>
+    </div>
+  </div>
+</div>
+
+<div id="app">
+  <div class="videos" id="videos"></div>
+  <div class="nav">
+    <div class="nav-item active"><div class="nav-icon">🏠</div><div class="nav-label">Главная</div></div>
+    <div class="nav-item"><div class="nav-icon">🔍</div><div class="nav-label">Поиск</div></div>
+    <div class="add-btn">+</div>
+    <div class="nav-item" onclick="showChats()"><div class="nav-icon">💬</div><div class="nav-label">Чаты</div></div>
+    <div class="nav-item" onclick="showProfile()"><div class="nav-icon">👤</div><div class="nav-label">Профиль</div></div>
+  </div>
+</div>
+
+<div id="chatsModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div class="modal-title">💬 Чаты</div>
+      <div class="modal-close" onclick="closeChats()">×</div>
+    </div>
+    <div id="chatsList"></div>
+  </div>
+</div>
+
+<div id="profileModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div class="modal-title">👤 Профиль</div>
+      <div class="modal-close" onclick="closeProfile()">×</div>
+    </div>
+    <div id="profileContent"></div>
+  </div>
+</div>
+
+<script>
+let user = null;
+let users = JSON.parse(localStorage.getItem('cravt_users')) || {};
+let videos = JSON.parse(localStorage.getItem('cravt_videos')) || [];
+
+// Создание админа
+if (!users['Admin']) {
+  users['Admin'] = {
+    username: 'Admin',
+    password: 'Mark123458790',
+    avatar: '👑',
+    bio: 'Официальный аккаунт CravtVox | Поддержка 24/7',
+    verified: true
+  };
+  localStorage.setItem('cravt_users', JSON.stringify(users));
+}
+
+// Тестовое видео
+if (videos.length === 0) {
+  videos = [{
+    id: 1,
+    author: 'Admin',
+    avatar: '👑',
+    desc: 'Добро пожаловать в Cravt! 🚀',
+    tags: '#cravt #welcome',
+    likes: 12453,
+    comments: [],
+    shares: 3421,
+    gradient: 'linear-gradient(135deg, #667eea, #764ba2)'
+  }];
+  localStorage.setItem('cravt_videos', JSON.stringify(videos));
+}
+
+function showReg() {
+  document.getElementById('loginForm').classList.add('hidden');
+  document.getElementById('regForm').classList.remove('hidden');
+}
+
+function showLog() {
+  document.getElementById('regForm').classList.add('hidden');
+  document.getElementById('loginForm').classList.remove('hidden');
+}
+
+function showErr(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function hideErr(id) {
+  document.getElementById(id).style.display = 'none';
+}
+
+function login() {
+  const username = document.getElementById('loginUser').value.trim();
+  const password = document.getElementById('loginPass').value;
+  
+  hideErr('loginError');
+  
+  if (!username || !password) {
+    showErr('loginError', '⚠️ Заполните все поля!');
+    return;
+  }
+  
+  if (!users[username]) {
+    showErr('loginError', '❌ Пользователь не найден!');
+    return;
+  }
+  
+  if (users[username].password !== password) {
+    showErr('loginError', '❌ Неверный пароль!');
+    return;
+  }
+  
+  user = users[username];
+  document.getElementById('authScreen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  renderVideos();
+}
+
+function register() {
+  const username = document.getElementById('regUser').value.trim();
+  const password = document.getElementById('regPass').value;
+  const password2 = document.getElementById('regPass2').value;
+  
+  hideErr('regError');
+  
+  if (!username || !password || !password2) {
+    showErr('regError', '⚠️ Заполните все поля!');
+    return;
+  }
+  
+  if (password !== password2) {
+    showErr('regError', '❌ Пароли не совпадают!');
+    return;
+  }
+  
+  if (users[username]) {
+    showErr('regError', '❌ Пользователь уже существует!');
+    return;
+  }
+  
+  users[username] = {
+    username,
+    password,
+    avatar: username[0].toUpperCase(),
+    bio: '',
+    verified: false
+  };
+  
+  localStorage.setItem('cravt_users', JSON.stringify(users));
+  user = users[username];
+  document.getElementById('authScreen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  renderVideos();
+}
+
+function renderVideos() {
+  const container = document.getElementById('videos');
+  container.innerHTML = videos.map((v, i) => `
+    <div class="video" style="background: ${v.gradient}">
+      <div class="video-info">
+        <div class="author">
+          <div class="avatar">${v.avatar}</div>
+          <div style="font-weight: 700;">${v.author} ${users[v.author]?.verified ? '✓' : ''}</div>
+          <button class="follow-btn">Подписаться</button>
+        </div>
+        <div>${v.desc}</div>
+        <div style="color: #00ff88; font-weight: 600; margin-top: 5px;">${v.tags}</div>
+      </div>
+      <div class="actions">
+        <div class="action">
+          <div class="action-icon">❤️</div>
+          <div class="action-count">${formatNum(v.likes)}</div>
+        </div>
+        <div class="action">
+          <div class="action-icon">💬</div>
+          <div class="action-count">${v.comments.length}</div>
+        </div>
+        <div class="action">
+          <div class="action-icon">➤</div>
+          <div class="action-count">${formatNum(v.shares)}</div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function formatNum(n) {
+  if (n >= 1000000) return (n/1000000).toFixed(1) + 'M';
+  if (n >= 1000) return (n/1000).toFixed(1) + 'K';
+  return n;
+}
+
+function showChats() {
+  const modal = document.getElementById('chatsModal');
+  modal.classList.add('active');
+  
+  const list = document.getElementById('chatsList');
+  list.innerHTML = `
+    <div style="padding: 15px; background: #0a0a0a; border-radius: 12px; margin-bottom: 10px; cursor: pointer;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #00ff88, #00ccff); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 700;">C</div>
+        <div style="flex: 1;">
+          <div style="font-weight: 700; margin-bottom: 4px;">CravtVox Official</div>
+          <div style="font-size: 14px; color: #999;">Добро пожаловать в Cravt!</div>
+        </div>
+        <div style="font-size: 12px; color: #999;">Сейчас</div>
+      </div>
+    </div>
+  `;
+}
+
+function closeChats() {
+  document.getElementById('chatsModal').classList.remove('active');
+}
+
+function showProfile() {
+  const modal = document.getElementById('profileModal');
+  modal.classList.add('active');
+  
+  const content = document.getElementById('profileContent');
+  content.innerHTML = `
+    <div style="text-align: center; padding: 20px;">
+      <div style="width: 100px; height: 100px; background: linear-gradient(135deg, #00ff88, #00ccff); border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; font-size: 40px; font-weight: 700;">${user.avatar}</div>
+      <div style="font-size: 24px; font-weight: 700; margin-bottom: 10px;">${user.username} ${user.verified ? '✓' : ''}</div>
+      <div style="color: #999; margin-bottom: 20px;">${user.bio || 'Нет описания'}</div>
+      <div style="background: #0a0a0a; border-radius: 12px; padding: 15px; margin-bottom: 20px; cursor: pointer;">
+        <div style="font-weight: 700; margin-bottom: 5px;">⚙️ Настройки</div>
+        <div style="font-size: 14px; color: #999;">Изменить профиль, пароль, настройки</div>
+      </div>
+      <button class="btn" onclick="logout()" style="background: #ef4444;">🚪 Выйти</button>
+    </div>
+  `;
+}
+
+function closeProfile() {
+  document.getElementById('profileModal').classList.remove('active');
+}
+
+function logout() {
+  if (confirm('Выйти из аккаунта?')) {
+    user = null;
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('authScreen').style.display = 'flex';
+    document.getElementById('loginUser').value = '';
+    document.getElementById('loginPass').value = '';
+    showLog();
+  }
+}
+</script>
+</body>
+</html>
